@@ -1,0 +1,11 @@
+{
+  "name": "@catclass/desktop",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "echo \"Desktop scaffold placeholder\"",
+    "build": "echo \"Desktop build placeholder\""
+  }
+}
+

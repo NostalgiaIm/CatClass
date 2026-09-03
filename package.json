@@ -1,0 +1,15 @@
+{
+  "name": "catclass",
+  "private": true,
+  "version": "0.1.0",
+  "description": "CatClass - a highly flexible cross-platform timetable app",
+  "license": "UNLICENSED",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "check": "echo \"CatClass scaffold ready\""
+  }
+}
+

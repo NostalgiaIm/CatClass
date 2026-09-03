@@ -1,0 +1,22 @@
+# Node / frontend
+node_modules/
+dist/
+out/
+coverage/
+.vite/
+
+# Electron
+release/
+*.log
+
+# Android / Kotlin
+.gradle/
+build/
+local.properties
+*.iml
+.idea/
+
+# Misc
+.DS_Store
+Thumbs.db
+
