@@ -1,4 +1,4 @@
-import type { ImageImportJob } from "../../../../packages/contracts/types/catclass.js";
+import type { ImageImportJob } from "../../../../../packages/contracts/types/catclass.js";
 
 // 图片识别服务：负责图片导入、OCR、结构解析与草稿生成
 export class VisionService {
@@ -17,4 +17,5 @@ export class VisionService {
     };
   }
 }
+
 

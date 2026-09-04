@@ -1,7 +1,7 @@
 import { BrowserWindow } from "electron";
 import path from "node:path";
 
-// 创建主窗口，后续会在这里接入 Vue 页面
+// Create the desktop shell. Dev loads Vite; production loads the built renderer.
 export function createMainWindow() {
   const window = new BrowserWindow({
     width: 1280,
@@ -17,8 +17,12 @@ export function createMainWindow() {
     },
   });
 
-  // 开发阶段先指向占位页面，后续替换为 Vite renderer 地址
-  window.loadURL("data:text/html,<h1>CatClass Desktop</h1>");
+  if (process.env.ELECTRON_RENDERER_URL) {
+    window.loadURL(process.env.ELECTRON_RENDERER_URL);
+  } else {
+    window.loadFile(path.join(__dirname, "../../renderer/index.html"));
+  }
+
   return window;
 }
 

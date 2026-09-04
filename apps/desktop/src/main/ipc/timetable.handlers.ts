@@ -1,12 +1,11 @@
 import { IPC_CHANNELS } from "./channels.js";
-import { DatabaseService } from "../services/DatabaseService.js";
+import { TimetableService } from "../services/TimetableService.js";
 
-const databaseService = new DatabaseService();
+const timetableService = new TimetableService();
 
-// 课表相关 IPC 处理器
+// Timetable IPC handlers exposed through preload only.
 export function registerTimetableHandlers(ipcMain: Electron.IpcMain) {
   ipcMain.handle(IPC_CHANNELS.timetableListSpaces, () => {
-    return databaseService.listSpaces();
+    return timetableService.listSpaces();
   });
 }
-

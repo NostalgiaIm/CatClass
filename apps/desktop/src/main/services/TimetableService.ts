@@ -1,3 +1,11 @@
-// 课表业务服务：负责课表空间、课程模板与排课规则的聚合
-export class TimetableService {}
+import type { TimetableSpace } from "../../../../../packages/contracts/types/catclass.js";
+import { DatabaseService } from "./DatabaseService.js";
 
+// Timetable service: keeps business orchestration out of IPC handlers.
+export class TimetableService {
+  constructor(private readonly databaseService = new DatabaseService()) {}
+
+  listSpaces(): TimetableSpace[] {
+    return this.databaseService.listSpaces();
+  }
+}

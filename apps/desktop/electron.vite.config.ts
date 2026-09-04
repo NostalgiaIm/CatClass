@@ -1,6 +1,7 @@
 import { defineConfig } from "electron-vite";
+import vue from "@vitejs/plugin-vue";
 
-// 桌面端构建配置入口
+// Desktop build entry. Main, preload, and renderer stay separated for Electron safety.
 export default defineConfig({
   main: {
     build: {
@@ -13,9 +14,10 @@ export default defineConfig({
     },
   },
   renderer: {
+    root: "src/renderer",
+    plugins: [vue()],
     build: {
-      outDir: "dist/renderer",
+      outDir: "../../dist/renderer",
     },
   },
 });
-
