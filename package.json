@@ -9,7 +9,8 @@
     "packages/*"
   ],
   "scripts": {
-    "check": "echo \"CatClass scaffold ready\""
+    "check": "npm --workspace @catclass/desktop run typecheck",
+    "desktop:dev": "npm --workspace @catclass/desktop run dev",
+    "desktop:build": "npm --workspace @catclass/desktop run build"
   }
 }
-

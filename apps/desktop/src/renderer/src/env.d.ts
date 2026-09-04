@@ -1,8 +1,14 @@
 /// <reference types="vite/client" />
 
-interface Window {
-  catclass?: {
-    ping: () => string;
-  };
+import type { TimetableSpace } from "../../../../../packages/contracts/types/catclass.js";
+
+declare global {
+  interface Window {
+    catclass?: {
+      ping: () => string;
+      listSpaces: () => Promise<TimetableSpace[]>;
+    };
+  }
 }
 
+export {};

@@ -1,5 +1,7 @@
-// 渲染进程可见的最小 API 声明，后续会继续扩展
+import type { TimetableSpace } from "../../../../../../packages/contracts/types/catclass.js";
+
+// Renderer-visible API contract. It mirrors the preload bridge.
 export interface CatClassApi {
   ping(): string;
+  listSpaces(): Promise<TimetableSpace[]>;
 }
-
