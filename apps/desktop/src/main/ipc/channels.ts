@@ -1,7 +1,8 @@
-// 统一管理 IPC 通道名，避免字符串散落各处
+// 统一管理 IPC 通道名，避免主进程、preload、渲染层各自散落字符串。
 export const IPC_CHANNELS = {
   timetableListSpaces: "timetable:listSpaces",
   timetableGetSpace: "timetable:getSpace",
+  timetableSaveSpace: "timetable:saveSpace",
   timetableSaveCourse: "timetable:saveCourse",
   timetableDeleteCourse: "timetable:deleteCourse",
   importExportImportJson: "importExport:importJson",
@@ -12,4 +13,3 @@ export const IPC_CHANNELS = {
   syncGetStatus: "sync:getStatus",
   syncRunOnce: "sync:runOnce",
 } as const;
-

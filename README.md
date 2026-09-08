@@ -1,17 +1,21 @@
 # CatClass
 
-CatClass is a highly flexible cross-platform timetable app. This branch starts the desktop implementation one feature at a time.
+CatClass is a highly flexible cross-platform timetable app for desktop and Android. The current `Vera` branch focuses on the Electron + Vue + TypeScript desktop client and grows the product one usable feature slice at a time.
 
-## Current Desktop Feature
+## Current Desktop Scope
 
-The first desktop slice is a read-only timetable preview:
+The desktop app now includes an interactive timetable workspace:
 
-- Electron main process creates the desktop window.
-- Preload exposes a small `window.catclass` API.
-- Renderer calls IPC through the preload bridge.
-- Vue displays a seeded timetable space, week grid, and course list.
-
-This is intentionally small. It proves the desktop path works before adding editing, storage, import, sync, and image recognition.
+- Switchable sidebar navigation for Timetable, Courses, Import, and Settings.
+- Timetable grid with selectable cells.
+- Course creation, editing, color selection, and deletion.
+- Course fields for title, teacher, room, weekday, start period, duration, color, and notes.
+- Multiple timetable spaces with a create timetable dialog.
+- Courses view with editable course list actions.
+- Import view with interactive placeholder actions for image timetable recognition.
+- Settings view for timetable name, academic year, visible days, weekend display, compact mode, and period time editing.
+- Electron preload bridge with `listSpaces` and `saveSpace` IPC APIs.
+- Main-process in-memory timetable store. This is temporary and will later be replaced by SQLite persistence.
 
 ## Tech Stack
 
@@ -19,7 +23,7 @@ This is intentionally small. It proves the desktop path works before adding edit
 - electron-vite
 - Vue 3
 - TypeScript
-- Shared CatClass contract package
+- Shared CatClass contracts package
 
 ## Start The Desktop App
 
@@ -30,20 +34,25 @@ npm install
 npm run desktop:dev
 ```
 
-The Electron window should open automatically. You should see:
+The Electron window should open automatically. If port `5173` is already occupied, Vite may choose another port such as `5174`; this is normal during development.
 
-- The CatClass sidebar
-- A `Default Timetable` workspace
-- A week grid with seeded courses
-- A course list on the right
-- A bridge status line that says `CatClass desktop bridge ready`
-
-## Useful Commands
+## Verify The Desktop App
 
 ```bash
-npm run desktop:dev
-npm run desktop:build
 npm run check
+npm run desktop:build
+```
+
+`npm run check` runs the desktop TypeScript check. `npm run desktop:build` builds the Electron main process, preload bridge, and Vue renderer.
+
+## Electron Download Troubleshooting
+
+If Electron fails with `ECONNRESET` or `Electron uninstall`, the Electron package was installed but its runtime binary was not downloaded. On Windows PowerShell, retry with a mirror:
+
+```powershell
+$env:ELECTRON_MIRROR = "https://npmmirror.com/mirrors/electron/"
+node node_modules/electron/install.js
+npm run desktop:dev
 ```
 
 ## Repository Layout
@@ -56,8 +65,12 @@ packages/contracts/ Shared schema and TypeScript contracts
 
 ## Not Included Yet
 
-- Desktop SQLite persistence
-- Course editing on desktop
-- Image timetable recognition on desktop
-- Sync service
-- Production packaging
+- SQLite persistence for desktop data.
+- Production packaging and auto-update.
+- Full OCR image timetable recognition workflow.
+- Cross-device sync.
+- Android and desktop feature parity.
+
+## Development Notes
+
+Desktop editing currently saves to an in-memory store inside the Electron main process. Data will reset after the app process exits. This keeps the current branch small while the UI, IPC, and domain contracts settle.

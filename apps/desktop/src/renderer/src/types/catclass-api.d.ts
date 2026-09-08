@@ -4,4 +4,5 @@ import type { TimetableSpace } from "../../../../../../packages/contracts/types/
 export interface CatClassApi {
   ping(): string;
   listSpaces(): Promise<TimetableSpace[]>;
+  saveSpace(space: TimetableSpace): Promise<TimetableSpace>;
 }

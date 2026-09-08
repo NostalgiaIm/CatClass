@@ -7,6 +7,7 @@ declare global {
     catclass?: {
       ping: () => string;
       listSpaces: () => Promise<TimetableSpace[]>;
+      saveSpace: (space: TimetableSpace) => Promise<TimetableSpace>;
     };
   }
 }
