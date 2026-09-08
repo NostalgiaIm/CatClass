@@ -10,10 +10,12 @@ export function createMainWindow() {
     minHeight: 720,
     title: "CatClass",
     webPreferences: {
-      preload: path.join(__dirname, "../../preload/index.js"),
+      preload: path.join(__dirname, "../preload/index.mjs"),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: true,
+      // 先关闭沙盒：当前 preload 以 ESM 方式编译，沙盒化 preload 会阻止这类导入，桥接就不会暴露。
+      // 后续如果要重新启用沙盒，需要把 preload 改成打包后的 CJS 方案。
+      sandbox: false,
     },
   });
 
@@ -25,4 +27,6 @@ export function createMainWindow() {
 
   return window;
 }
+
+
 
