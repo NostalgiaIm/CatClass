@@ -1,32 +1,43 @@
 <template>
-  <main class="app-shell">
-    <aside class="sidebar">
-      <div class="brand-block">
-        <span class="brand-mark">C</span>
-        <div>
-          <h1>CatClass</h1>
-          <p>Desktop Preview</p>
+  <main class="app-shell" :class="{ 'sidebar-collapsed': sidebarCollapsed }">
+    <aside class="sidebar" :class="{ collapsed: sidebarCollapsed }">
+      <button
+        class="panel-toggle sidebar-toggle"
+        type="button"
+        :aria-label="sidebarCollapsed ? '展开目录' : '收起目录'"
+        @click="sidebarCollapsed = !sidebarCollapsed"
+      >
+        {{ sidebarCollapsed ? '›' : '‹' }}
+      </button>
+
+      <template v-if="!sidebarCollapsed">
+        <div class="brand-block">
+          <span class="brand-mark">C</span>
+          <div>
+            <h1>CatClass</h1>
+            <p>Desktop Preview</p>
+          </div>
         </div>
-      </div>
 
-      <nav class="nav-list" aria-label="Primary">
-        <button
-          v-for="item in navItems"
-          :key="item.id"
-          class="nav-item"
-          :class="{ active: currentView === item.id }"
-          type="button"
-          @click="setView(item.id)"
-        >
-          <span>{{ item.label }}</span>
-          <span v-if="item.id === 'courses'" class="nav-count">{{ selectedSpace?.courses.length ?? 0 }}</span>
-        </button>
-      </nav>
+        <nav class="nav-list" aria-label="Primary">
+          <button
+            v-for="item in navItems"
+            :key="item.id"
+            class="nav-item"
+            :class="{ active: currentView === item.id }"
+            type="button"
+            @click="setView(item.id)"
+          >
+            <span>{{ item.label }}</span>
+            <span v-if="item.id === 'courses'" class="nav-count">{{ selectedSpace?.courses.length ?? 0 }}</span>
+          </button>
+        </nav>
 
-      <div class="sidebar-footer">
-        <span class="status-dot" :class="{ online: !loadError }"></span>
-        <span>{{ loadError ? "本地预览" : "桥接已连接" }}</span>
-      </div>
+        <div class="sidebar-footer">
+          <span class="status-dot" :class="{ online: !loadError }"></span>
+          <span>{{ loadError ? '本地预览' : '桥接已连接' }}</span>
+        </div>
+      </template>
     </aside>
 
     <section class="workspace">
@@ -49,7 +60,7 @@
       <section
         v-if="currentView === 'timetable'"
         class="content-grid"
-        :class="{ compact: selectedSpace?.settings?.compactMode }"
+        :class="{ compact: selectedSpace?.settings?.compactMode, 'editor-collapsed': editorCollapsed }"
       >
         <article class="timetable-panel">
           <div class="panel-heading">
@@ -57,7 +68,27 @@
               <h3>周视图</h3>
               <p>{{ activeTermLabel }}</p>
             </div>
-            <span>{{ visibleDayLabels.length }} 天 · {{ selectedSpace?.courses.length ?? 0 }} 门课</span>
+            <div class="panel-heading-actions">
+              <div class="week-mode-toggle" role="group" aria-label="周视图切换">
+                <button
+                  class="ghost-action small segmented-button"
+                  type="button"
+                  :class="{ active: isWeekMode(5) }"
+                  @click="setWeekMode(5)"
+                >
+                  5天
+                </button>
+                <button
+                  class="ghost-action small segmented-button"
+                  type="button"
+                  :class="{ active: isWeekMode(7) }"
+                  @click="setWeekMode(7)"
+                >
+                  7天
+                </button>
+              </div>
+              <span>{{ visibleDayLabels.length }} 天 · {{ selectedSpace?.courses.length ?? 0 }} 门课</span>
+            </div>
           </div>
 
           <div v-if="spaces.length > 1" class="space-tabs" aria-label="Timetable spaces">
@@ -76,7 +107,8 @@
           <div v-if="selectedSpace" class="timetable-grid" :style="gridStyle">
             <div class="grid-corner">时间</div>
             <div v-for="day in visibleDayLabels" :key="day.index" class="day-header">
-              {{ day.label }}
+              <span>{{ day.label }}</span>
+              <span class="day-date">{{ day.dateLabel }}</span>
             </div>
 
             <template v-for="period in periods" :key="period.index">
@@ -88,11 +120,14 @@
                 v-for="day in visibleDayLabels"
                 :key="`${period.index}-${day.index}`"
                 class="course-cell"
-                :class="{ selected: isCellSelected(day.index, period.index) }"
+                :class="{ selected: isCellSelected(day.index, period.index), 'drag-over': isDragTarget(day.index, period.index) }"
                 role="button"
                 tabindex="0"
                 :aria-label="`选择 ${day.label} ${period.label}`"
                 @click="selectCell(day.index, period.index)"
+                @dragover.prevent="setDragTarget(day.index, period.index)"
+                @dragleave="clearDragTarget(day.index, period.index)"
+                @drop.prevent="dropCourseOnCell(day.index, period.index)"
                 @keydown.enter.prevent="selectCell(day.index, period.index)"
                 @keydown.space.prevent="selectCell(day.index, period.index)"
               >
@@ -100,13 +135,16 @@
                   v-for="course in coursesForCell(day.index, period.index)"
                   :key="course.id"
                   class="course-chip"
-                  :class="{ active: selectedCourseId === course.id }"
+                  :class="{ active: selectedCourseId === course.id, dragging: draggingCourseId === course.id }"
                   type="button"
+                  draggable="true"
                   :style="{ borderColor: course.color, backgroundColor: `${course.color}18` }"
                   @click.stop="selectCourse(course)"
+                  @dragstart="startCourseDrag(course, $event)"
+                  @dragend="endCourseDrag"
                 >
                   <strong>{{ course.title }}</strong>
-                  <span>{{ course.location ?? "未设置教室" }}</span>
+                  <span>{{ course.location ?? '未设置教室' }}</span>
                 </button>
                 <span v-if="coursesForCell(day.index, period.index).length === 0" class="cell-placeholder">+</span>
               </div>
@@ -119,7 +157,17 @@
           </div>
         </article>
 
-        <aside class="editor-panel">
+        <aside class="editor-panel" :class="{ collapsed: editorCollapsed }">
+          <button
+            class="panel-toggle editor-toggle"
+            type="button"
+            :aria-label="editorCollapsed ? '展开编辑区' : '收起编辑区'"
+            @click="editorCollapsed = !editorCollapsed"
+          >
+            {{ editorCollapsed ? '‹' : '›' }}
+          </button>
+
+          <template v-if="!editorCollapsed">
           <div class="panel-heading compact">
             <div>
               <h3>{{ courseEditorTitle }}</h3>
@@ -189,6 +237,7 @@
               <button class="danger-action" type="button" :disabled="!selectedCourse" @click="deleteSelectedCourse">删除</button>
             </div>
           </form>
+          </template>
         </aside>
       </section>
 
@@ -406,6 +455,12 @@ const navItems: Array<{ id: ViewId; label: string }> = [
   { id: "settings", label: "设置" },
 ];
 
+const sidebarCollapsed = ref(false);
+const editorCollapsed = ref(false);
+const weekViewMode = ref<5 | 7>(5);
+const draggingCourseId = ref<string | null>(null);
+const dragTarget = ref<SelectedCell | null>(null);
+
 // 页面核心状态：先在渲染层形成完整交互闭环，再通过 preload 同步给主进程内存仓库。
 const currentView = ref<ViewId>("timetable");
 const spaces = ref<TimetableSpace[]>([]);
@@ -430,11 +485,17 @@ const selectedCourse = computed(() => selectedSpace.value?.courses.find((course)
 const periods = computed<Period[]>(() => selectedSpace.value?.timeTemplates[0]?.periods ?? []);
 const activeTermLabel = computed(() => activeTerm.value?.name ?? "未设置学期");
 const visibleDayLabels = computed(() => {
-  const visibleDays = selectedSpace.value?.settings?.visibleDays ?? [1, 2, 3, 4, 5];
-  return visibleDays
+  const visibleDays = selectedSpace.value?.settings?.visibleDays ?? (weekViewMode.value === 7 ? [1, 2, 3, 4, 5, 6, 7] : [1, 2, 3, 4, 5]);
+  const activeDays = visibleDays
     .filter((index) => index >= 1 && index <= 7)
-    .sort((left, right) => left - right)
-    .map((index) => dayOptions.find((day) => day.index === index) ?? { index, label: `第 ${index} 天` });
+    .sort((left, right) => left - right);
+  return activeDays.map((index) => {
+    const baseDay = dayOptions.find((day) => day.index === index) ?? { index, label: `第 ${index} 天` };
+    return {
+      ...baseDay,
+      dateLabel: formatWeekDate(index),
+    };
+  });
 });
 const gridStyle = computed(() => ({
   gridTemplateColumns: `132px repeat(${visibleDayLabels.value.length}, minmax(132px, 1fr))`,
@@ -475,11 +536,30 @@ function setView(view: ViewId) {
   currentView.value = view;
 }
 
+function syncWeekViewModeFromSpace(space: TimetableSpace | null | undefined) {
+  weekViewMode.value = space?.settings?.visibleDays?.length === 7 ? 7 : 5;
+}
+
+function isWeekMode(mode: 5 | 7): boolean {
+  return weekViewMode.value === mode;
+}
+
+function setWeekMode(mode: 5 | 7) {
+  weekViewMode.value = mode;
+  if (selectedSpace.value) {
+    const settings = ensureSettings(selectedSpace.value);
+    settings.visibleDays = mode === 7 ? [1, 2, 3, 4, 5, 6, 7] : [1, 2, 3, 4, 5];
+    settings.showWeekend = mode === 7;
+    touchSpace(selectedSpace.value);
+  }
+}
+
 function selectSpace(spaceId: string) {
   selectedSpaceId.value = spaceId;
   selectedCourseId.value = null;
   selectedCell.value = null;
   courseForm.value = createBlankCourseForm();
+  syncWeekViewModeFromSpace(selectedSpace.value);
 }
 
 // 课表格子本身就是新增课程的入口：点击空格子后，右侧表单会自动带入星期和节次。
@@ -501,6 +581,74 @@ function coursesForCell(dayOfWeek: number, periodIndex: number): CourseTemplate[
   ) ?? [];
 }
 
+
+function startCourseDrag(course: CourseTemplate, event: DragEvent) {
+  draggingCourseId.value = course.id;
+  dragTarget.value = course.scheduleRules[0]
+    ? { dayOfWeek: course.scheduleRules[0].dayOfWeek, periodIndex: course.scheduleRules[0].startPeriod }
+    : null;
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', course.id);
+  }
+}
+
+function endCourseDrag() {
+  draggingCourseId.value = null;
+  dragTarget.value = null;
+}
+
+function setDragTarget(dayOfWeek: number, periodIndex: number) {
+  if (draggingCourseId.value) {
+    dragTarget.value = { dayOfWeek, periodIndex };
+  }
+}
+
+function clearDragTarget(dayOfWeek: number, periodIndex: number) {
+  if (dragTarget.value?.dayOfWeek === dayOfWeek && dragTarget.value.periodIndex === periodIndex) {
+    dragTarget.value = null;
+  }
+}
+
+function isDragTarget(dayOfWeek: number, periodIndex: number): boolean {
+  return dragTarget.value?.dayOfWeek === dayOfWeek && dragTarget.value.periodIndex === periodIndex;
+}
+
+function dropCourseOnCell(dayOfWeek: number, periodIndex: number) {
+  const course = selectedSpace.value?.courses.find((item) => item.id === draggingCourseId.value);
+  if (!course) {
+    return;
+  }
+  moveCourse(course, dayOfWeek, periodIndex);
+  endCourseDrag();
+}
+
+function moveCourse(course: CourseTemplate, dayOfWeek: number, periodIndex: number) {
+  const space = selectedSpace.value;
+  if (!space) {
+    return;
+  }
+  const firstRule = course.scheduleRules[0];
+  const rule = createScheduleRule(firstRule);
+  rule.dayOfWeek = clampNumber(dayOfWeek, 1, 7);
+  rule.startPeriod = clampNumber(periodIndex, 1, periods.value.length || 1);
+  const maxDuration = Math.max(1, (periods.value.length || 1) - rule.startPeriod + 1);
+  rule.periodCount = clampNumber(firstRule?.periodCount ?? 1, 1, maxDuration);
+  course.scheduleRules = [rule];
+  selectedCourseId.value = course.id;
+  selectedCell.value = { dayOfWeek: rule.dayOfWeek, periodIndex: rule.startPeriod };
+  courseForm.value = {
+    title: course.title,
+    teacher: course.teacher ?? '',
+    location: course.location ?? '',
+    color: course.color,
+    note: course.note ?? '',
+    dayOfWeek: rule.dayOfWeek,
+    startPeriod: rule.startPeriod,
+    periodCount: rule.periodCount,
+  };
+  touchSpace(space);
+}
 function selectCourse(course: CourseTemplate) {
   const firstRule = course.scheduleRules[0];
   selectedCourseId.value = course.id;
@@ -617,6 +765,7 @@ function toggleVisibleDay(dayOfWeek: number, checked: boolean) {
   }
   settings.visibleDays = Array.from(visibleDays).sort((left, right) => left - right);
   settings.showWeekend = settings.visibleDays.some((day) => day >= 6);
+  syncWeekViewModeFromSpace(space);
   touchSpace(space);
 }
 
@@ -641,6 +790,7 @@ function toggleWeekend(checked: boolean) {
   }
   settings.visibleDays = Array.from(visibleDays).sort((left, right) => left - right);
   settings.showWeekend = checked;
+  syncWeekViewModeFromSpace(space);
   touchSpace(space);
 }
 
@@ -711,6 +861,7 @@ function createSpace() {
   selectedCourseId.value = null;
   selectedCell.value = { dayOfWeek: 1, periodIndex: 1 };
   courseForm.value = createBlankCourseForm(selectedCell.value);
+  syncWeekViewModeFromSpace(space);
   currentView.value = "timetable";
   persistSpace(space);
   closeCreateSpaceDialog();
@@ -743,6 +894,18 @@ function formatDay(dayOfWeek: number): string {
   return dayOptions.find((day) => day.index === dayOfWeek)?.label ?? `第 ${dayOfWeek} 天`;
 }
 
+function formatWeekDate(dayOfWeek: number): string {
+  const term = activeTerm.value;
+  if (!term?.startDate) {
+    return '';
+  }
+  const start = new Date(term.startDate);
+  const weekStartDay = selectedSpace.value?.weekStartDay ?? 1;
+  const offset = (dayOfWeek - weekStartDay + 7) % 7;
+  start.setDate(start.getDate() + offset);
+  return `${start.getMonth() + 1}月${start.getDate()}日`;
+}
+
 async function reloadSpaces() {
   loadError.value = null;
   try {
@@ -757,6 +920,7 @@ async function reloadSpaces() {
     const remoteSpaces = await window.catclass.listSpaces();
     spaces.value = cloneSpaces(remoteSpaces);
     selectedSpaceId.value = spaces.value.some((space) => space.id === previousSpaceId) ? previousSpaceId : spaces.value[0]?.id ?? null;
+    syncWeekViewModeFromSpace(selectedSpace.value);
     selectedCell.value = { dayOfWeek: 1, periodIndex: 1 };
     courseForm.value = createBlankCourseForm(selectedCell.value);
     ensureLocalSpace();
@@ -770,6 +934,7 @@ async function reloadSpaces() {
 function ensureLocalSpace() {
   if (spaces.value.length > 0) {
     selectedSpaceId.value = selectedSpaceId.value ?? spaces.value[0]?.id ?? null;
+    syncWeekViewModeFromSpace(selectedSpace.value);
     return;
   }
 
@@ -957,13 +1122,58 @@ button:disabled {
   grid-template-columns: 240px minmax(0, 1fr);
 }
 
+.app-shell.sidebar-collapsed {
+  grid-template-columns: 18px minmax(0, 1fr);
+}
+
 .sidebar {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 28px;
   padding: 28px 18px;
   color: #f8fafc;
   background: #202736;
+}
+
+.sidebar.collapsed {
+  padding: 28px 8px;
+}
+
+.panel-toggle {
+  position: absolute;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  min-width: 18px;
+  border: 0;
+  border-radius: 999px;
+  color: #f8fafc;
+  background: #1d4ed8;
+  box-shadow: 0 6px 16px rgb(15 23 42 / 24%);
+}
+
+.sidebar-toggle {
+  top: 24px;
+  right: -9px;
+  height: 28px;
+}
+
+.editor-toggle {
+  top: 18px;
+  left: -9px;
+  height: 28px;
+}
+
+.sidebar-collapsed .sidebar-toggle {
+  right: 0;
+}
+
+.sidebar.collapsed .brand-block,
+.sidebar.collapsed .nav-list,
+.sidebar.collapsed .sidebar-footer {
+  display: none;
 }
 
 .brand-block {
@@ -1080,6 +1290,32 @@ button:disabled {
   gap: 16px;
 }
 
+.panel-heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.week-mode-toggle {
+  display: inline-flex;
+  gap: 0;
+  border: 1px solid #d9e2ef;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.segmented-button {
+  border: 0;
+  border-radius: 0;
+  background: #ffffff;
+}
+
+.segmented-button.active {
+  color: #ffffff;
+  background: #2563eb;
+}
+
 .toolbar {
   margin-bottom: 18px;
 }
@@ -1170,6 +1406,10 @@ button:disabled {
   align-items: start;
 }
 
+.content-grid.editor-collapsed {
+  grid-template-columns: minmax(0, 1fr) 18px;
+}
+
 .timetable-panel,
 .editor-panel,
 .module-panel,
@@ -1179,6 +1419,19 @@ button:disabled {
   border-radius: 8px;
   background: #ffffff;
   box-shadow: 0 12px 28px rgb(15 23 42 / 8%);
+}
+
+.editor-panel {
+  position: relative;
+}
+
+.editor-panel.collapsed {
+  padding: 18px 8px;
+  overflow: visible;
+}
+
+.editor-panel.collapsed > :not(.editor-toggle) {
+  display: none;
 }
 
 .timetable-panel,
@@ -1259,6 +1512,16 @@ button:disabled {
   font-weight: 700;
 }
 
+.day-header {
+  gap: 2px;
+}
+
+.day-date {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+}
+
 .period-cell {
   display: grid;
   align-content: center;
@@ -1279,6 +1542,11 @@ button:disabled {
   gap: 6px;
   padding: 8px;
   outline: 0;
+}
+
+.course-cell.drag-over {
+  background: #e0f2fe;
+  box-shadow: inset 0 0 0 2px #38bdf8;
 }
 
 .course-cell:hover,
@@ -1307,6 +1575,10 @@ button:disabled {
   padding: 8px;
   color: #14213d;
   text-align: left;
+}
+
+.course-chip.dragging {
+  opacity: 0.55;
 }
 
 .course-chip.active {
@@ -1464,6 +1736,11 @@ textarea {
   grid-template-columns: minmax(82px, 1fr) 92px 92px 34px;
   gap: 8px;
   align-items: center;
+}
+
+.editor-panel.collapsed .editor-toggle,
+.sidebar.collapsed .sidebar-toggle {
+  inset-inline: auto;
 }
 
 .period-editor-row input {
