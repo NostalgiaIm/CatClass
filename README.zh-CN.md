@@ -1,5 +1,7 @@
 # CatClass
 
+<a href="README.md">English</a>
+
 CatClass 是一款高度自由化的跨端课程表应用，目标覆盖桌面端和安卓端。当前 `Vera` 分支优先推进 Electron + Vue + TypeScript 桌面端，并按功能切片逐步完善。
 
 ## 当前桌面端范围
