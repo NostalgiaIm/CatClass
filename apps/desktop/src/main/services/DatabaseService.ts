@@ -118,9 +118,22 @@ const defaultSpace: TimetableSpace = {
   },
 };
 
-// Data service: seed data first, then replace this boundary with SQLite persistence.
+function cloneSpace(space: TimetableSpace): TimetableSpace {
+  return JSON.parse(JSON.stringify(space)) as TimetableSpace;
+}
+
+// Data service: 目前先提供内存仓库；未来接 SQLite 时只替换这个边界。
 export class DatabaseService {
+  private readonly spaces = new Map<string, TimetableSpace>([[defaultSpace.id, cloneSpace(defaultSpace)]]);
+
+  // 返回副本，避免渲染层通过引用意外修改主进程中的状态。
   listSpaces(): TimetableSpace[] {
-    return [defaultSpace];
+    return Array.from(this.spaces.values()).map(cloneSpace);
+  }
+
+  // 保存整张课表，先服务桌面端编辑闭环，后续可以拆成更细的 Course/Period 命令。
+  saveSpace(space: TimetableSpace): TimetableSpace {
+    this.spaces.set(space.id, cloneSpace(space));
+    return cloneSpace(space);
   }
 }
