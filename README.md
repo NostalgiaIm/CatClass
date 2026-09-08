@@ -1,5 +1,7 @@
 # CatClass
 
+<a href="README.zh.md">中文</a>
+
 CatClass is a highly flexible cross-platform timetable app for desktop and Android. The current `Vera` branch focuses on the Electron + Vue + TypeScript desktop client and grows the product one usable feature slice at a time.
 
 ## Current Desktop Scope
