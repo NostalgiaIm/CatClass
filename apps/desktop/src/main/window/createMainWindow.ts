@@ -10,7 +10,7 @@ export function createMainWindow() {
     minHeight: 720,
     title: "CatClass",
     webPreferences: {
-      preload: path.join(__dirname, "../../preload/index.js"),
+      preload: path.join(__dirname, "../preload/index.mjs"),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
